@@ -2,9 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Calendar from '../components/neu/Calendar'
 import BookingModal from '../components/neu/BookingModal'
 import { addMonths, todayISO } from '../lib/calendar'
-import { fetchBusinessHours, fetchBlockedDates, fetchTurnos, fetchOcupados, crearTurno, updateEstadoTurno } from '../lib/api'
-import { generarSlots } from '../lib/slots'
-import { NEGOCIO, colorEstado, labelEstado } from '../lib/config'
+import { fetchBusinessHours, fetchBlockedDates, fetchTurnos, crearTurno, updateEstadoTurno } from '../lib/api'
+import { colorEstado, labelEstado } from '../lib/config'
 
 const ESTADOS = ['todos', 'pendiente', 'completado', 'cancelado']
 
@@ -19,8 +18,6 @@ export default function Agenda() {
   const [turnos, setTurnos] = useState([])
 
   const [hora, setHora] = useState('')
-  const [ocupados, setOcupados] = useState([])
-  const [loadingSlots, setLoadingSlots] = useState(false)
 
   const [form, setForm] = useState({ nombre: '', descripcion: '' })
   const [enviando, setEnviando] = useState(false)
@@ -68,34 +65,6 @@ export default function Agenda() {
     return m
   }, [hours])
 
-  useEffect(() => {
-    if (!selectedISO) return
-    let alive = true
-    setLoadingSlots(true)
-    fetchOcupados(selectedISO)
-      .then((data) => { if (alive) setOcupados(data) })
-      .catch(() => { if (alive) setOcupados([]) })
-      .finally(() => { if (alive) setLoadingSlots(false) })
-    return () => { alive = false }
-  }, [selectedISO])
-
-  const slots = useMemo(() => {
-    if (!selectedISO) return []
-    const d = new Date(selectedISO + 'T12:00:00')
-    const bh = hoursByDow[d.getDay()]
-    if (!bh?.activo) return []
-    return generarSlots({
-      abre: '00:00',
-      cierra: '24:00',
-      duracionMin: NEGOCIO.duracionMin,
-      ocupados: ocupados.map((o) => ({
-        hora_inicio: String(o.hora_inicio).slice(0, 5),
-        hora_fin: String(o.hora_fin).slice(0, 5),
-      })),
-      fechaISO: selectedISO,
-    })
-  }, [selectedISO, ocupados, hoursByDow])
-
   const handleMonthChange = (y, m, delta) => {
     if (typeof delta === 'number') {
       const r = addMonths(y, m, delta)
@@ -122,7 +91,7 @@ export default function Agenda() {
 
   const reservar = async (e) => {
     e.preventDefault()
-    if (!selectedISO || !hora) return
+    if (!selectedISO || !hora) return setError('Elegí una hora para el turno.')
     if (form.nombre.trim().length < 2) return setError('Ingresá tu nombre.')
     setError('')
     setEnviando(true)
@@ -244,8 +213,6 @@ export default function Agenda() {
         onClose={() => setModalOpen(false)}
         fechaISO={selectedISO}
         events={eventsMap[selectedISO] || []}
-        slots={slots}
-        loadingSlots={loadingSlots}
         hora={hora}
         setHora={setHora}
         form={form}
