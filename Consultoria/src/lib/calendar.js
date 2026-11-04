@@ -21,6 +21,11 @@ export function isSameDayISO(aISO, bISO) {
   return aISO === bISO
 }
 
+export function formatFechaCorta(iso) {
+  const [y, m, d] = String(iso).split('-')
+  return `${d}/${m}/${y}`
+}
+
 export function todayISO() {
   const n = new Date()
   return toISODateLocal(n.getFullYear(), n.getMonth(), n.getDate())

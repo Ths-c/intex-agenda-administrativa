@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTurnosDeCliente } from '../../lib/api'
 import { colorEstado, labelEstado } from '../../lib/config'
-
-function fechaCorta(iso) {
-  const [y, m, d] = String(iso).split('-')
-  return `${d}/${m}/${y}`
-}
+import { formatFechaCorta } from '../../lib/calendar'
 
 export default function ClientHistoryModal({ cliente, onClose }) {
   const [turnos, setTurnos] = useState([])
@@ -64,7 +60,7 @@ export default function ClientHistoryModal({ cliente, onClose }) {
             {turnos.map((t) => (
               <li key={t.id}>
                 <div className="neu-history-info">
-                  <strong>{fechaCorta(t.fecha)} · {String(t.hora_inicio).slice(0, 5)} hs</strong>
+                  <strong>{formatFechaCorta(t.fecha)} · {String(t.hora_inicio).slice(0, 5)} hs</strong>
                   {t.descripcion && <span>{t.descripcion}</span>}
                 </div>
                 <span className="neu-reserva-estado" style={{ background: colorEstado(t.estado) }}>

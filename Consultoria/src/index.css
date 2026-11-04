@@ -291,3 +291,16 @@ textarea.neu-input { resize: vertical; font-family: inherit; }
 }
 .neu-quick-title { margin: 0; font-size: 13px; font-weight: 700; }
 .neu-quick-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* ===== Detalle de turno ===== */
+.neu-reserva { cursor: pointer; transition: transform .15s ease; }
+.neu-reserva:hover { transform: translateY(-1px); }
+.neu-reserva:focus-visible { outline: 2px solid #c3cbdb; outline-offset: 2px; }
+.neu-detail-list { display: grid; gap: 10px; margin: 14px 0 0; }
+.neu-detail-list > div {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  padding: 10px 14px; border-radius: 12px; box-shadow: var(--neu-inset);
+}
+.neu-detail-list dt { font-size: 13px; color: var(--neu-muted); }
+.neu-detail-list dd { margin: 0; font-weight: 600; font-size: 14px; text-align: right; overflow-wrap: anywhere; }
+.neu-modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import Calendar from '../components/neu/Calendar'
 import BookingModal from '../components/neu/BookingModal'
+import TurnoModal from '../components/neu/TurnoModal'
 import { addMonths, todayISO } from '../lib/calendar'
 import { fetchBusinessHours, fetchBlockedDates, fetchTurnos, fetchClients, crearTurno, updateEstadoTurno } from '../lib/api'
 import { colorEstado, labelEstado } from '../lib/config'
@@ -26,6 +27,7 @@ export default function Agenda() {
   const [okMsg, setOkMsg] = useState('')
   const [error, setError] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [detalle, setDetalle] = useState(null)
 
   const [busqueda, setBusqueda] = useState('')
   const [fEstado, setFEestado] = useState('todos')
@@ -208,14 +210,26 @@ export default function Agenda() {
           ) : (
             <div className="neu-reserva-list">
               {turnosFiltrados.map((t) => (
-                <div key={t.id} className="neu-reserva">
+                <div
+                  key={t.id}
+                  className="neu-reserva"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setDetalle(t)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setDetalle(t)
+                    }
+                  }}
+                >
                   <div className="neu-reserva-info">
                     <strong>{String(t.hora_inicio).slice(0, 5)} · {t.cliente_nombre}</strong>
                     {t.descripcion && <span>{t.descripcion}</span>}
                   </div>
                   <span className="neu-reserva-estado" style={{ background: colorEstado(t.estado) }}>{labelEstado(t.estado)}</span>
                   {t.estado === 'pendiente' && (
-                    <div className="neu-reserva-actions">
+                    <div className="neu-reserva-actions" onClick={(e) => e.stopPropagation()}>
                       <button type="button" className="neu-pill-btn neu-btn-completar" onClick={() => cambiarEstado(t.id, 'completado')}>Completar</button>
                       <button type="button" className="neu-pill-btn neu-btn-cancelar" onClick={() => cambiarEstado(t.id, 'cancelado')}>Cancelar</button>
                     </div>
@@ -244,6 +258,22 @@ export default function Agenda() {
         enviando={enviando}
         okMsg={okMsg}
       />
+
+      {detalle && (
+        <TurnoModal
+          turno={detalle}
+          clients={clients}
+          onClose={() => setDetalle(null)}
+          onSaved={async () => {
+            try {
+              const data = await fetchTurnos()
+              setTurnos(data)
+            } catch (e) {
+              setError(e.message)
+            }
+          }}
+        />
+      )}
     </div>
   )
 }

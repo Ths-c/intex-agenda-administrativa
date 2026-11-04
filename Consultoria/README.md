@@ -12,6 +12,7 @@ App interna de gestión de turnos para dentista. React 19 + Vite 8 + Supabase.
   - Filtro por **día**.
   - Filtro por **estado**.
 - Desde la lista se pueden **completar** o **cancelar** una reserva; el **estado se ve en el color** de la reserva.
+- Las reservas son **clickeables**: abren un detalle con **Modificar** (fecha, hora, cliente y descripción).
 
 ## Clientes
 

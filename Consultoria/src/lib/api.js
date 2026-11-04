@@ -223,6 +223,35 @@ export async function crearTurno({ fecha, hora, clientId = null, nombre, descrip
   return data
 }
 
+export async function actualizarTurno(id, { fecha, hora, clientId = null, nombre, descripcion }) {
+  if (!supabaseConfigured) {
+    await new Promise((r) => setTimeout(r, 400))
+    const cliente = clientId ? MOCK.clients.find((c) => c.id === clientId) : null
+    const nombreFinal = cliente ? nombreCompleto(cliente) : (nombre || '').trim()
+    const [h, m] = hora.split(':').map(Number)
+    const total = h * 60 + (m || 0) + NEGOCIO.duracionMin
+    const fin = `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`
+    MOCK.turnos = MOCK.turnos.map((t) =>
+      t.id === id
+        ? { ...t, fecha, hora_inicio: hora, hora_fin: fin, cliente_nombre: nombreFinal, client_id: clientId || null, descripcion: descripcion || '' }
+        : t
+    )
+    return MOCK.turnos.find((t) => t.id === id)
+  }
+
+  const { data, error } = await supabase.rpc('actualizar_turno', {
+    p_id: id,
+    p_fecha: fecha,
+    p_hora: hora,
+    p_client_id: clientId || null,
+    p_nombre: nombre || '',
+    p_descripcion: descripcion || '',
+    p_duracion_min: NEGOCIO.duracionMin,
+  })
+  if (error) throw new Error(errMsg(error))
+  return data
+}
+
 export async function updateEstadoTurno(id, estado) {
   const { error } = await supabase.from('appointments').update({ estado }).eq('id', id)
   if (error) throw new Error(errMsg(error))

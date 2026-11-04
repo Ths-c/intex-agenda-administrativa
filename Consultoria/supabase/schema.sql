@@ -7,6 +7,7 @@
 -- Limpieza segura (re-ejecutable)
 drop function if exists public.crear_turno(date, time, text, text, text, text, text, int);
 drop function if exists public.crear_turno(date, time, uuid, text, text, int);
+drop function if exists public.actualizar_turno(uuid, date, time, uuid, text, text, int);
 drop function if exists public.get_ocupados(date);
 drop function if exists public.get_mis_turnos(text);
 
@@ -97,6 +98,11 @@ declare
   v_apellido text;
   v_client_id uuid;
 begin
+  -- Solo migrar una vez: si ya hay clientes, no volver a crear desde turnos
+  if exists (select 1 from public.clients) then
+    return;
+  end if;
+
   for r in
     select distinct trim(cliente_nombre) as nombre_completo
     from public.appointments
@@ -248,3 +254,93 @@ exception when unique_violation then
 end;
 $$;
 grant execute on function public.crear_turno(date, time, uuid, text, text, int) to anon, authenticated;
+
+
+-- Actualizar turno (misma validación que crear, excluyendo el propio turno).
+-- No bloquea horarios pasados: permite corregir turnos históricos.
+create or replace function public.actualizar_turno(
+  p_id uuid, p_fecha date, p_hora time, p_client_id uuid, p_nombre text,
+  p_descripcion text, p_duracion_min int default 30
+)
+returns public.appointments
+language plpgsql security definer set search_path = public as $$
+declare
+  v_fin time;
+  v_dow int;
+  v_bh business_hours%rowtype;
+  v_cliente clients%rowtype;
+  v_nombre text;
+  v_turno appointments%rowtype;
+begin
+  select * into v_turno from public.appointments where id = p_id;
+  if not found then
+    raise exception 'El turno no existe.';
+  end if;
+
+  p_nombre := trim(coalesce(p_nombre, ''));
+  p_descripcion := trim(coalesce(p_descripcion, ''));
+
+  if p_client_id is not null then
+    select * into v_cliente from public.clients where id = p_client_id;
+    if not found then
+      raise exception 'El cliente no existe.';
+    end if;
+    if coalesce(v_cliente.activo, false) = false then
+      raise exception 'El cliente está archivado.';
+    end if;
+    v_nombre := trim(v_cliente.nombre || ' ' || v_cliente.apellido);
+  else
+    if p_nombre = '' or char_length(p_nombre) < 2 then
+      raise exception 'Ingresá el nombre del cliente (mínimo 2 letras).';
+    end if;
+    v_nombre := p_nombre;
+  end if;
+
+  if p_duracion_min < 10 or p_duracion_min > 240 then
+    raise exception 'Duración inválida.';
+  end if;
+
+  v_fin := (p_fecha + p_hora + make_interval(mins => p_duracion_min))::time;
+  v_dow := extract(dow from p_fecha)::int;
+
+  select * into v_bh from public.business_hours where dia_semana = v_dow;
+  if not found or coalesce(v_bh.activo, false) = false then
+    raise exception 'Ese día está cerrado.';
+  end if;
+  if v_fin > '24:00'::time then
+    raise exception 'Horario fuera del horario laboral.';
+  end if;
+  if exists (select 1 from public.blocked_dates where fecha = p_fecha) then
+    raise exception 'Ese día no hay atención.';
+  end if;
+  if exists (
+    select 1 from public.appointments a
+    where a.id <> p_id
+      and a.fecha = p_fecha and a.estado in ('pendiente','completado')
+      and tstzrange(
+        (p_fecha + a.hora_inicio)::timestamptz,
+        (p_fecha + a.hora_fin)::timestamptz, '[)'
+      ) && tstzrange(
+        (p_fecha + p_hora)::timestamptz,
+        (p_fecha + v_fin)::timestamptz, '[)'
+      )
+  ) then
+    raise exception 'Ese horario se acaba de ocupar. Elegí otro.';
+  end if;
+
+  update public.appointments
+  set fecha = p_fecha,
+      hora_inicio = p_hora,
+      hora_fin = v_fin,
+      cliente_nombre = v_nombre,
+      descripcion = p_descripcion,
+      client_id = p_client_id
+  where id = p_id
+  returning * into v_turno;
+
+  return v_turno;
+exception when unique_violation then
+  raise exception 'Ese horario se acaba de ocupar. Elegí otro.';
+end;
+$$;
+grant execute on function public.actualizar_turno(uuid, date, time, uuid, text, text, int) to anon, authenticated;
