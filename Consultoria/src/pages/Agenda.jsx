@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Calendar from '../components/neu/Calendar'
 import BookingModal from '../components/neu/BookingModal'
 import { addMonths, todayISO } from '../lib/calendar'
-import { fetchBusinessHours, fetchBlockedDates, fetchTurnos, crearTurno, updateEstadoTurno } from '../lib/api'
+import { fetchBusinessHours, fetchBlockedDates, fetchTurnos, fetchClients, crearTurno, updateEstadoTurno } from '../lib/api'
 import { colorEstado, labelEstado } from '../lib/config'
 
 const ESTADOS = ['todos', 'pendiente', 'completado', 'cancelado']
@@ -16,8 +16,10 @@ export default function Agenda() {
   const [hours, setHours] = useState([])
   const [blocked, setBlocked] = useState([])
   const [turnos, setTurnos] = useState([])
+  const [clients, setClients] = useState([])
 
   const [hora, setHora] = useState('')
+  const [clienteId, setClienteId] = useState('')
 
   const [form, setForm] = useState({ nombre: '', descripcion: '' })
   const [enviando, setEnviando] = useState(false)
@@ -32,10 +34,11 @@ export default function Agenda() {
   useEffect(() => {
     ;(async () => {
       try {
-        const [h, b, t] = await Promise.all([fetchBusinessHours(), fetchBlockedDates(), fetchTurnos()])
+        const [h, b, t, c] = await Promise.all([fetchBusinessHours(), fetchBlockedDates(), fetchTurnos(), fetchClients()])
         setHours(h)
         setBlocked(b)
         setTurnos(t)
+        setClients(c)
       } catch (e) {
         setError(e.message)
       }
@@ -79,6 +82,7 @@ export default function Agenda() {
   const handleSelectDate = (iso) => {
     setSelectedISO(iso)
     setHora('')
+    setClienteId('')
     setOkMsg('')
     setModalOpen(true)
     const [y, m] = iso.split('-').map(Number)
@@ -92,25 +96,40 @@ export default function Agenda() {
   const reservar = async (e) => {
     e.preventDefault()
     if (!selectedISO || !hora) return setError('Elegí una hora para el turno.')
-    if (form.nombre.trim().length < 2) return setError('Ingresá tu nombre.')
+    const clienteSel = clients.find((c) => c.id === clienteId)
+    const nombre = clienteSel
+      ? `${clienteSel.nombre} ${clienteSel.apellido}`.trim()
+      : form.nombre.trim()
+    if (!clienteSel && nombre.length < 2) return setError('Ingresá el nombre del cliente.')
     setError('')
     setEnviando(true)
     try {
       await crearTurno({
         fecha: selectedISO,
         hora,
-        nombre: form.nombre.trim(),
+        clientId: clienteId || null,
+        nombre,
         descripcion: form.descripcion.trim(),
       })
       const data = await fetchTurnos()
       setTurnos(data)
-      setOkMsg(`Turno reservado para ${form.nombre.trim()} · ${selectedISO} · ${hora}`)
+      setOkMsg(`Turno reservado para ${nombre} · ${selectedISO} · ${hora}`)
       setForm({ nombre: '', descripcion: '' })
+      setClienteId('')
     } catch (e2) {
       setError(e2.message)
     } finally {
       setEnviando(false)
     }
+  }
+
+  const clienteCreado = (nuevo) => {
+    setClients((prev) => {
+      const next = [...prev.filter((c) => c.id !== nuevo.id), nuevo]
+      next.sort((a, b) => `${a.apellido} ${a.nombre}`.localeCompare(`${b.apellido} ${b.nombre}`))
+      return next
+    })
+    setClienteId(nuevo.id)
   }
 
   const cambiarEstado = async (id, estado) => {
@@ -213,6 +232,10 @@ export default function Agenda() {
         onClose={() => setModalOpen(false)}
         fechaISO={selectedISO}
         events={eventsMap[selectedISO] || []}
+        clients={clients}
+        clienteId={clienteId}
+        setClienteId={setClienteId}
+        onClienteCreado={clienteCreado}
         hora={hora}
         setHora={setHora}
         form={form}

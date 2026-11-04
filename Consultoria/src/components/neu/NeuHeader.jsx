@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { NEGOCIO } from '../../lib/config'
 
 export default function NeuHeader() {
@@ -12,7 +12,10 @@ export default function NeuHeader() {
         </span>
       </Link>
       <div className="neu-header-right">
-        <span className="neu-muted">Gestión de turnos</span>
+        <nav className="neu-nav" aria-label="Secciones">
+          <NavLink to="/" end>Agenda</NavLink>
+          <NavLink to="/clientes">Clientes</NavLink>
+        </nav>
       </div>
     </header>
   )

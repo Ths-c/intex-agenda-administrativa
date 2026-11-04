@@ -241,3 +241,53 @@ a { color: inherit; }
 }
 .neu-btn-completar { background: #7fb98a; color: #ffffff; }
 .neu-btn-cancelar { background: #d97a7a; color: #ffffff; }
+
+
+/* ===== Navegación header ===== */
+.neu-nav { display: flex; gap: 8px; flex-wrap: wrap; }
+.neu-nav a {
+  padding: 9px 18px; border-radius: 999px; text-decoration: none;
+  font-size: 14px; font-weight: 600; color: var(--neu-ink);
+  background: var(--neu-surface); box-shadow: var(--neu-shadow-sm);
+  transition: box-shadow .2s ease, transform .15s ease;
+}
+.neu-nav a:hover { transform: translateY(-1px); }
+.neu-nav a.active { box-shadow: var(--neu-inset); color: var(--neu-muted); }
+
+/* ===== Clientes ===== */
+.neu-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.neu-error { color: #a04f60; font-weight: 600; font-size: 13px; }
+.neu-modal-sm { max-width: 460px; }
+textarea.neu-input { resize: vertical; font-family: inherit; }
+.neu-client-list { display: grid; gap: 12px; }
+.neu-client {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px; border-radius: 14px; box-shadow: var(--neu-inset);
+}
+.neu-client-info { display: grid; gap: 2px; min-width: 220px; flex: 1; }
+.neu-client-info strong { font-size: 14px; }
+.neu-client-info span { font-size: 13px; color: var(--neu-muted); overflow-wrap: anywhere; }
+.neu-history { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.neu-history li {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 14px; border-radius: 12px; box-shadow: var(--neu-inset);
+}
+.neu-history-info { display: grid; gap: 2px; min-width: 0; }
+.neu-history-info strong { font-size: 14px; }
+.neu-history-info span { font-size: 13px; color: var(--neu-muted); }
+
+@media (max-width: 560px) {
+  .neu-form-row { grid-template-columns: 1fr; }
+}
+
+.neu-link-btn {
+  justify-self: start; border: none; background: none; cursor: pointer;
+  color: #5d6b85; font-size: 13px; font-weight: 600; padding: 2px 0;
+}
+.neu-link-btn:hover { text-decoration: underline; }
+.neu-quick-client {
+  display: grid; gap: 10px; padding: 14px; border-radius: 14px;
+  box-shadow: var(--neu-inset); margin-top: 4px;
+}
+.neu-quick-title { margin: 0; font-size: 13px; font-weight: 700; }
+.neu-quick-actions { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
